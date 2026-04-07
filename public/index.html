@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FZ-ScriptRoom</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:        #0d0f14;
+      --surface:   #151821;
+      --surface2:  #1e2230;
+      --border:    rgba(255,255,255,0.07);
+      --accent:    #7c6af7;
+      --accent2:   #4fc3f7;
+      --accent3:   #f77c6a;
+      --text:      #e8eaf0;
+      --muted:     #7a8099;
+      --success:   #56c490;
+      --gold:      #f5c842;
+      --dev-color: #7c6af7;
+      --str-color: #f5c842;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ─── Header ─────────────────────────────── */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.25rem 2rem; border-bottom: 1px solid var(--border);
+      background: rgba(21,24,33,0.9); backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .header-logo { display: flex; align-items: center; gap: .75rem; }
+    .header-logo h1 {
+      font-size: 1.1rem; font-weight: 600; letter-spacing: -.02em;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .header-right { display: flex; align-items: center; gap: 1rem; }
+    .refresh-group { display: flex; flex-direction: column; align-items: flex-end; gap: .2rem; }
+    .refresh-btn {
+      display: flex; align-items: center; gap: .4rem;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--muted); padding: .5rem 1rem; border-radius: 8px;
+      cursor: pointer; font-size: .85rem; font-family: inherit; transition: all .2s;
+    }
+    .refresh-btn:hover { color: var(--text); border-color: var(--accent); }
+    .refresh-icon.spinning { display: inline-block; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .nav-link {
+      color: var(--muted); text-decoration: none; font-size: .85rem;
+      padding: .5rem 1rem; border-radius: 8px; transition: all .2s;
+      border: 1px solid transparent; cursor: pointer; background: none;
+      font-family: inherit;
+    }
+    .nav-link:hover { color: var(--text); background: var(--surface2); border-color: var(--border); }
+    .nav-link.spinning-nav { animation: spin .4s ease-in-out; }
+    .last-updated { font-size: .68rem; color: var(--muted); opacity: .7; }
+
+    /* ─── Node selector ──────────────────────────── */
+    .node-select-wrap { display: flex; align-items: center; gap: .5rem; }
+    .node-select-label { font-size: .72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+    .node-select {
+      background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+      padding: .4rem .75rem; border-radius: 8px; font-size: .82rem;
+      font-family: inherit; cursor: pointer; outline: none; min-width: 180px;
+      transition: border-color .2s;
+    }
+    .node-select:focus { border-color: var(--accent); }
+    .node-badge {
+      display: inline-flex; align-items: center; gap: .3rem;
+      font-size: .68rem; padding: .2rem .55rem; border-radius: 5px;
+      background: rgba(124,106,247,.15); color: var(--accent);
+      border: 1px solid rgba(124,106,247,.3); white-space: nowrap;
+    }
+
+    /* ─── Page transition ─────────────────────── */
+    @keyframes pgIn  { from { opacity:0; transform:translateY(-50px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes pgOut { from { opacity:1; transform:translateY(0);     } to { opacity:0; transform:translateY(50px); } }
+    .main.nav-enter { animation: pgIn  .45s cubic-bezier(0.22,1,0.36,1) both; }
+    .main.exit      { animation: pgOut .28s ease-in both; pointer-events:none; }
+
+    /* ─── Main ───────────────────────────────── */
+    .main { max-width: 1400px; margin: 0 auto; padding: 2rem 2rem 4rem; }
+    .section-title { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 1.25rem; }
+
+    /* ─── Month selector ──────────────────────── */
+    .period-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.75rem; }
+    .month-filter select {
+      background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+      padding: .4rem .75rem; border-radius: 8px; font-size: .85rem;
+      font-family: inherit; cursor: pointer; outline: none;
+    }
+    .month-filter select:focus { border-color: var(--accent); }
+
+    /* ─── Mini-card expand ──────────────────────────── */
+    .mini-card { cursor: pointer; user-select: none; }
+    .mini-extra { display: none !important; margin-top: .35rem; }
+    .mini-card.expanded .mini-extra { display: grid !important; grid-template-columns: 1fr 1fr; gap: .35rem; }
+    .mini-expand-hint { font-size: .58rem; color: var(--muted); opacity: .4; text-align: right; }
+    .mini-card.expanded .mini-expand-hint { content: '▴ menos'; opacity: .25; }
+
+    /* ─── Summary bar ─────────────────────────── */
+    .summary-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .summary-item { background: linear-gradient(135deg,var(--surface),var(--surface2)); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: .3rem; }
+    .summary-item .label { font-size: .72rem; color: var(--muted); font-weight: 500; }
+    .summary-item .value { font-size: 1.5rem; font-weight: 700; letter-spacing: -.03em; }
+    .v-accent  { color: var(--accent); }
+    .v-gold    { color: var(--gold); }
+    .v-accent2 { color: var(--accent2); }
+    .v-success { color: var(--success); }
+
+    /* ─── Tree Layout ─────────────────────────── */
+    .tree-section { margin-bottom: 2.5rem; }
+    .tree-root-row { display: flex; justify-content: center; margin-bottom: 0; }
+    .tree-connector { display: flex; justify-content: center; margin-bottom: 0; }
+    .tree-connector-line {
+      width: 2px; height: 24px;
+      background: linear-gradient(to bottom, var(--accent), var(--border));
+    }
+    .tree-branches-row { display: flex; gap: 1.5rem; align-items: flex-start; }
+    .tree-branch-wrap { flex: 1; }
+    .tree-branch-top {
+      display: flex; justify-content: center; margin-bottom: 0;
+    }
+    .tree-branch-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      margin-bottom: 0;
+      border: 2px solid var(--border);
+    }
+    .tree-branch-line { width: 2px; height: 20px; margin: 0 auto; }
+
+    /* ─── Orchestrator card ───────────────────── */
+    .orch-card {
+      background: var(--surface); border: 1px solid rgba(124,106,247,.3);
+      border-radius: 16px; padding: 1.25rem 2rem;
+      display: flex; align-items: center; gap: 1.5rem;
+      position: relative; overflow: hidden;
+      box-shadow: 0 0 30px rgba(124,106,247,.08);
+    }
+    .orch-card::before { content:''; position:absolute; top:0;left:0;right:0;height:3px;background:var(--accent);border-radius:16px 16px 0 0; }
+    .orch-emoji { font-size: 2rem; width: 3rem; height: 3rem; display:flex;align-items:center;justify-content:center; background:var(--surface2);border-radius:12px; }
+    .orch-info { flex:1; }
+    .orch-name { font-size:1.1rem;font-weight:700; }
+    .orch-subtitle { font-size:.75rem;color:var(--muted);margin:.1rem 0 .4rem; }
+    .orch-model { display:inline-block;font-size:.68rem;padding:.2rem .5rem;border-radius:5px;background:var(--surface2);color:var(--accent2);border:1px solid rgba(79,195,247,.2); }
+    .orch-stats { display:flex;gap:2rem; }
+    .orch-stat { display:flex;flex-direction:column;align-items:flex-end; }
+    .orch-stat .os-label { font-size:.68rem;color:var(--muted); }
+    .orch-stat .os-val { font-size:1.1rem;font-weight:700;letter-spacing:-.02em; }
+
+    /* ─── Group card ──────────────────────────── */
+    .group-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden;
+    }
+    .group-header {
+      padding: .65rem 1rem; display:flex;align-items:center;gap:.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .group-label { font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em; }
+    .group-agents { display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border); }
+
+    /* ─── Compact agent card ──────────────────── */
+    .mini-card {
+      background: var(--surface); padding: .9rem .85rem;
+      display:flex;flex-direction:column;gap:.5rem;
+      transition: background .15s;
+    }
+    .mini-card:hover { background: var(--surface2); }
+    .mini-header { display:flex;align-items:center;gap:.5rem; }
+    .mini-emoji { font-size:1.15rem;width:1.8rem;height:1.8rem;display:flex;align-items:center;justify-content:center;background:var(--surface2);border-radius:7px;flex-shrink:0; }
+    .mini-name { font-size:.85rem;font-weight:600;line-height:1.2; }
+    .mini-sub  { font-size:.65rem;color:var(--muted); }
+    .mini-model { font-size:.62rem;padding:.15rem .4rem;border-radius:4px;background:var(--surface2);color:var(--accent2);border:1px solid rgba(79,195,247,.15);display:inline-block;margin-top:.1rem; }
+    .mini-stats { display:grid;grid-template-columns:1fr;gap:.35rem; }
+    .mini-stat { background:var(--surface2);border-radius:6px;padding:.4rem .5rem; }
+    .mini-stat .ms-label { font-size:.62rem;color:var(--muted); }
+    .mini-stat .ms-val   { font-size:.85rem;font-weight:700;letter-spacing:-.01em; }
+    .empty-mini { color:var(--muted);font-size:.72rem;opacity:.7; }
+
+    /* ─── Timeline chart ──────────────────────── */
+    .timeline-card { background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:2.5rem; }
+    .chart-title { font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:1.25rem; }
+    .chart-wrap canvas { max-height:240px; }
+
+    /* ─── Charts row ──────────────────────────── */
+    .charts-row { display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;margin-bottom:2.5rem; }
+    @media(max-width:900px){.charts-row{grid-template-columns:1fr;}}
+    .chart-card { background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem; }
+
+    /* ─── Sessions table ──────────────────────── */
+    .table-card { background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden; }
+    .table-header { padding:1.1rem 1.5rem;border-bottom:1px solid var(--border);font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted); }
+    table { width:100%;border-collapse:collapse; }
+    thead th { text-align:left;font-size:.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:.7rem 1.25rem;border-bottom:1px solid var(--border); }
+    tbody tr { transition:background .15s; }
+    tbody tr:hover { background:var(--surface2); }
+    tbody td { padding:.8rem 1.25rem;font-size:.85rem;border-bottom:1px solid var(--border); }
+    tbody tr:last-child td { border-bottom:none; }
+    .td-agent { display:flex;align-items:center;gap:.45rem; }
+    .td-mono  { font-family:monospace;font-size:.78rem;color:var(--muted); }
+    .td-cost  { color:var(--gold);font-weight:600; }
+    .td-tokens{ color:var(--accent2);font-weight:600; }
+
+    /* ─── Loading ─────────────────────────────── */
+    .loading { display:flex;align-items:center;justify-content:center;height:60vh;flex-direction:column;gap:1rem;color:var(--muted); }
+    .spinner { width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite; }
+    .error-msg { color:var(--accent3);text-align:center;padding:2rem; }
+
+    /* ─── Farol standalone ────────────────────── */
+    .standalone-row { display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;margin-bottom:2.5rem; }
+    .standalone-card { background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.7rem;position:relative;overflow:hidden; }
+    .standalone-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--card-accent,var(--accent));border-radius:14px 14px 0 0;}
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-logo">
+    <span class="claw"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="32" height="32"><rect width="400" height="400" fill="#000000"/><defs><linearGradient id="rainbow" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#ff6ec7"/><stop offset="20%" stop-color="#ffcc00"/><stop offset="40%" stop-color="#aaee44"/><stop offset="60%" stop-color="#44ddaa"/><stop offset="80%" stop-color="#44aaff"/><stop offset="100%" stop-color="#aa88ff"/></linearGradient></defs><text x="200" y="230" text-anchor="middle" dominant-baseline="central" font-family="Arial Black, Impact, sans-serif" font-weight="900" font-size="88" letter-spacing="8" fill="url(#rainbow)">FRAME</text></svg></span>
+    <h1>FZ-ScriptRoom</h1>
+  </div>
+  <div class="header-right">
+    <button class="nav-link" id="navBtn" onclick="navigateTo('/proyectos')">🗂 Tableros</button>
+    <div class="node-select-wrap">
+      <span class="node-select-label">🖥️ Nodo</span>
+      <select class="node-select" id="nodeFilter" onchange="loadData()">
+        <option value="all">🌐 Todas las computadoras</option>
+      </select>
+    </div>
+    <div class="refresh-group">
+      <button class="refresh-btn" id="refreshBtn" onclick="triggerSync()"><span class="refresh-icon" id="refreshIcon">⟳</span> Sincronizar</button>
+      <span class="last-updated" id="lastUpdated">—</span>
+    </div>
+  </div>
+</header>
+
+<main class="main" id="main">
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <span>Cargando datos de sesiones…</span>
+  </div>
+</main>
+
+<script>
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+const fmt   = n => n == null ? '—' : Number(n).toLocaleString('es-AR', { maximumFractionDigits: 0 });
+const fmtK  = n => n == null ? '—' : n >= 1e6 ? (n/1e6).toFixed(2)+'M' : n >= 1000 ? (n/1000).toFixed(1)+'K' : String(Math.round(n));
+const fmtC  = n => n == null ? '—' : '$' + Number(n).toFixed(4);
+const fmtDate = ts => ts ? new Date(ts).toLocaleString('es-AR', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+
+// Tree structure
+const TREE = {
+  orchestrator: 'VonClo',
+  standalone: ['Farol'],
+  groups: [
+    { label: 'Desarrollo', color: '#7c6af7', dot: '#7c6af7', members: ['Adi','Showy','Wildy','Peña'] },
+    { label: 'Estructura',  color: '#f5c842', dot: '#f5c842', members: ['Bartis','Rimbaud','Doc','Conti'] },
+  ]
+};
+
+const AGENT_COLORS = {
+  VonClo:'#7c6af7', Farol:'#4fc3f7',
+  Adi:'#a78bfa', Showy:'#818cf8', Wildy:'#6ee7b7', 'Peña':'#fb923c',
+  Bartis:'#fbbf24', Rimbaud:'#f472b6', Doc:'#34d399', Conti:'#60a5fa',
+  main:'#7c6af7','agente-fotografo':'#4fc3f7',
+};
+
+// ─── Animated navigation ─────────────────────────────────────────────────────
+function navigateTo(url) {
+  const main = document.getElementById('main');
+  main.classList.add('exit');
+  sessionStorage.setItem('nav-enter','1');
+  setTimeout(() => { window.location.href = url; }, 300);
+}
+
+// Apply enter animation if coming from navigation
+if (sessionStorage.getItem('nav-enter')) {
+  sessionStorage.removeItem('nav-enter');
+  document.getElementById('main')?.classList.add('nav-enter');
+}
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let currentPeriod = 'month';  // month | quarter | semester | year
+let currentYear   = new Date().getFullYear();
+let currentMonth  = new Date().getMonth() + 1;
+let barChart, donutChart, timelineChart;
+let autoRefreshTimer;
+
+// ─── Period helpers ───────────────────────────────────────────────────────────
+function periodRange(type, year, month) {
+  const now = new Date();
+  year  = year  || now.getFullYear();
+  month = month || now.getMonth() + 1;
+
+  if (type === 'month') {
+    return { tsStart: new Date(year, month-1, 1).getTime(), tsEnd: new Date(year, month, 1).getTime(), label: new Date(year, month-1).toLocaleString('es-AR', {month:'long',year:'numeric'}) };
+  }
+  if (type === 'quarter') {
+    const q = Math.ceil(month / 3);
+    const sm = (q-1)*3 + 1;
+    return { tsStart: new Date(year, sm-1, 1).getTime(), tsEnd: new Date(year, sm+2, 1).getTime(), label: `T${q} ${year}` };
+  }
+  if (type === 'semester') {
+    const s = month <= 6 ? 1 : 2;
+    const sm = s === 1 ? 0 : 6;
+    return { tsStart: new Date(year, sm, 1).getTime(), tsEnd: new Date(year, sm+6, 1).getTime(), label: `${s}° Sem. ${year}` };
+  }
+  if (type === 'year') {
+    return { tsStart: new Date(year, 0, 1).getTime(), tsEnd: new Date(year+1, 0, 1).getTime(), label: String(year) };
+  }
+  return periodRange('month', year, month);
+}
+
+// ─── Load node list ──────────────────────────────────────────────────────────
+async function loadNodes() {
+  try {
+    const res  = await fetch('/api/nodes');
+    const data = await res.json();
+    const sel  = document.getElementById('nodeFilter');
+    // Keep the 'all' option, then append each node
+    data.nodes.forEach(n => {
+      const opt = document.createElement('option');
+      opt.value       = n.node_id;
+      opt.textContent = `🖥️ ${n.label || n.node_id} (${n.host})`;
+      sel.appendChild(opt);
+    });
+    // Restore last selected node
+    const saved = sessionStorage.getItem('oc-node') || 'all';
+    if ([...sel.options].some(o => o.value === saved)) sel.value = saved;
+  } catch (e) {
+    console.warn('Could not load node list:', e.message);
+  }
+}
+
+// ─── Manual sync trigger ─────────────────────────────────────────────────────
+async function triggerSync() {
+  const icon = document.getElementById('refreshIcon');
+  icon.classList.add('spinning');
+  try {
+    await fetch('/api/sync', { method: 'POST' });
+    document.getElementById('lastUpdated').textContent = 'Sincronizando… ' + new Date().toLocaleTimeString('es-AR');
+    // Reload stats after a short delay to let the background job start
+    setTimeout(() => loadData(), 3000);
+  } catch(e) {
+    console.warn('Sync trigger failed:', e.message);
+  } finally {
+    setTimeout(() => icon.classList.remove('spinning'), 2800);
+  }
+}
+
+// ─── Fetch ────────────────────────────────────────────────────────────────────
+async function loadData(type, year, month) {
+  type  = type  || currentPeriod;
+  year  = year  || currentYear;
+  month = month || currentMonth;
+  currentPeriod = type;
+  currentYear   = year;
+  currentMonth  = month;
+
+  const { tsStart, tsEnd } = periodRange(type, year, month);
+  const node = document.getElementById('nodeFilter')?.value || 'all';
+  sessionStorage.setItem('oc-node', node);
+
+  const icon = document.getElementById('refreshIcon');
+  icon.classList.add('spinning');
+  try {
+    const res  = await fetch(`/api/stats?tsStart=${tsStart}&tsEnd=${tsEnd}&node=${node}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    render(data);
+    document.getElementById('lastUpdated').textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-AR');
+  } catch(e) {
+    document.getElementById('main').innerHTML = `<div class="error-msg">❌ Error: ${e.message}</div>`;
+  } finally {
+    icon.classList.remove('spinning');
+  }
+  clearTimeout(autoRefreshTimer);
+  autoRefreshTimer = setTimeout(() => loadData(), 60_000);
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function render(data) {
+  const { agents, timeline, recent_sessions, available_months, period } = data;
+  currentYear  = period.year;
+  currentMonth = period.month;
+
+  // Build lookup: name → agent data
+  const byName = {};
+  for (const a of agents) {
+    const name = a.identity?.name || a.agent_id;
+    byName[name] = a;
+    byName[a.agent_id] = a;
+  }
+
+  const totalTokens  = agents.reduce((s,a) => s + (a.total_tokens||0), 0);
+  const totalCost    = agents.reduce((s,a) => s + (a.total_cost||0), 0);
+  const totalSess    = agents.reduce((s,a) => s + (a.session_count||0), 0);
+  const activeAgents = agents.filter(a => a.total_tokens > 0).length;
+
+  const main = document.getElementById('main');
+
+  // Build year options (last 3 years)
+  const thisYear = new Date().getFullYear();
+  const yearOpts = [thisYear, thisYear-1, thisYear-2].map(y => `<option value="${y}" ${y===currentYear?'selected':''}>${y}</option>`).join('');
+  const monthOpts = Array.from({length:12},(_,i)=>i+1).map(m => {
+    const raw = new Date(currentYear,m-1).toLocaleString('es-AR',{month:'short'});
+    const label = raw.charAt(0).toUpperCase() + raw.slice(1);
+    return `<option value="${m}" ${m===currentMonth?'selected':''}>${label}</option>`;
+  }).join('');
+
+  main.innerHTML = `
+    <!-- Period filter -->
+    <div class="period-row">
+      <p class="section-title" style="margin-bottom:0">Período</p>
+      <div class="month-filter" style="display:flex;gap:.5rem;align-items:center">
+        <select id="periodType" onchange="onPeriodTypeChange(this.value)">
+          <option value="month"    ${currentPeriod==='month'   ?'selected':''}>Mes</option>
+          <option value="quarter"  ${currentPeriod==='quarter' ?'selected':''}>Trimestre</option>
+          <option value="semester" ${currentPeriod==='semester'?'selected':''}>Semestre</option>
+          <option value="year"     ${currentPeriod==='year'    ?'selected':''}>Año</option>
+        </select>
+        <select id="periodMonth" onchange="onPeriodChange()" style="${currentPeriod==='year'?'display:none':''}"
+          ${currentPeriod==='year'?'disabled':''}>${monthOpts}</select>
+        <select id="periodYear" onchange="onPeriodChange()">${yearOpts}</select>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-bar">
+      <div class="summary-item"><span class="label">Tokens totales</span><span class="value v-accent">${fmtK(totalTokens)}</span></div>
+      <div class="summary-item"><span class="label">Costo total</span><span class="value v-gold">$${totalCost.toFixed(4)}</span></div>
+      <div class="summary-item"><span class="label">Sesiones</span><span class="value v-accent2">${fmt(totalSess)}</span></div>
+      <div class="summary-item"><span class="label">Agentes activos</span><span class="value v-success">${activeAgents}</span></div>
+    </div>
+
+    <!-- Tree -->
+    <p class="section-title">Orquestación</p>
+    <div class="tree-section" id="treeSection"></div>
+
+    <!-- Standalone agents (Farol etc.) -->
+    <div id="standaloneSection"></div>
+
+    <!-- Timeline chart -->
+    <div class="timeline-card">
+      <p class="chart-title">Consumo de tokens en el tiempo</p>
+      <div class="chart-wrap"><canvas id="timelineChart"></canvas></div>
+    </div>
+
+    <!-- Bar + Donut -->
+    <div class="charts-row">
+      <div class="chart-card"><p class="chart-title">Tokens por agente</p><div class="chart-wrap"><canvas id="barChart"></canvas></div></div>
+      <div class="chart-card"><p class="chart-title">Distribución de costo</p><div class="chart-wrap"><canvas id="donutChart"></canvas></div></div>
+    </div>
+
+    <!-- Sessions table -->
+    <p class="section-title">Sesiones recientes</p>
+    <div class="table-card">
+      <table>
+        <thead><tr><th>Agente</th><th>Sesión</th><th>Última actividad</th><th>Mensajes</th><th>Tokens</th><th>Costo</th></tr></thead>
+        <tbody id="sessionsBody"></tbody>
+      </table>
+    </div>
+  `;
+
+  // ── Build tree ──────────────────────────────────────────────────────────────
+  const orchAgent = byName[TREE.orchestrator] || byName['main'] || null;
+  const treeEl = document.getElementById('treeSection');
+
+  // Orchestrator card
+  const oc = orchAgent;
+  const orchHtml = `
+    <div class="tree-root-row">
+      <div class="orch-card" style="min-width:min(100%,560px);max-width:700px">
+        <div class="orch-emoji">${oc?.identity?.emoji || '🧠'}</div>
+        <div class="orch-info">
+          <div class="orch-name">${oc?.identity?.name || 'VonClo'}</div>
+          <div class="orch-subtitle">${oc?.identity?.subtitle || 'Agente Orquestador'}</div>
+          ${oc?.model ? `<span class="orch-model">${oc.model}</span>` : ''}
+        </div>
+        <div class="orch-stats">
+          <div class="orch-stat">
+            <span class="os-label">Tokens</span>
+            <span class="os-val v-accent2">${fmtK(oc?.total_tokens)}</span>
+          </div>
+          <div class="orch-stat">
+            <span class="os-label">Costo</span>
+            <span class="os-val v-gold">${fmtC(oc?.total_cost)}</span>
+          </div>
+          <div class="orch-stat">
+            <span class="os-label">Sesiones</span>
+            <span class="os-val v-success">${oc?.session_count || 0}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tree-connector"><div class="tree-connector-line"></div></div>
+  `;
+
+  // Group cards
+  const groupsHtml = `<div class="tree-branches-row">${
+    TREE.groups.map(g => `
+      <div class="tree-branch-wrap">
+        <div class="tree-branch-top">
+          <div class="tree-branch-dot" style="background:${g.dot};border-color:${g.dot}"></div>
+        </div>
+        <div class="tree-branch-line" style="background:${g.color}44;width:2px"></div>
+        <div class="group-card">
+          <div class="group-header" style="border-bottom-color:${g.color}33">
+            <span style="width:8px;height:8px;border-radius:50%;background:${g.color};display:inline-block;flex-shrink:0"></span>
+            <span class="group-label" style="color:${g.color}">${g.label}</span>
+          </div>
+          <div class="group-agents">
+            ${g.members.map(name => miniCard(name, byName[name])).join('')}
+          </div>
+        </div>
+      </div>
+    `).join('')
+  }</div>`;
+
+  treeEl.innerHTML = orchHtml + groupsHtml;
+
+  // ── Standalone agents (Farol etc.) ─────────────────────────────────────────
+  const standaloneAgents = agents.filter(a => {
+    const name = a.identity?.name || a.agent_id;
+    return !TREE.groups.flatMap(g => g.members).includes(name)
+        && name !== (orchAgent?.identity?.name || 'VonClo')
+        && name !== 'main';
+  });
+
+  const standaloneEl = document.getElementById('standaloneSection');
+  if (standaloneAgents.length > 0) {
+    standaloneEl.innerHTML = `
+      <p class="section-title" style="margin-top:2rem">Otros agentes</p>
+      <div class="standalone-row">
+        ${standaloneAgents.map((a, i) => {
+          const color = AGENT_COLORS[a.identity?.name] || AGENT_COLORS[a.agent_id] || '#4fc3f7';
+          return `
+          <div class="standalone-card" style="--card-accent:${color}">
+            <div class="mini-header">
+              <div class="mini-emoji">${a.identity?.emoji || '🤖'}</div>
+              <div>
+                <div class="mini-name">${a.identity?.name || a.agent_id}</div>
+                <div class="mini-sub">${a.identity?.subtitle || a.agent_id}</div>
+                ${a.model ? `<span class="mini-model">${a.model}</span>` : ''}
+              </div>
+            </div>
+            <div class="mini-stats">
+              <div class="mini-stat"><div class="ms-label">Tokens</div><div class="ms-val v-accent2">${fmtK(a.total_tokens)}</div></div>
+              <div class="mini-stat"><div class="ms-label">Costo</div><div class="ms-val v-gold">${fmtC(a.total_cost)}</div></div>
+              <div class="mini-stat"><div class="ms-label">Histórico</div><div class="ms-val v-accent">${fmtK(a.all_time_tokens)}</div></div>
+              <div class="mini-stat"><div class="ms-label">Sesiones</div><div class="ms-val v-success">${a.session_count||0}</div></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  }
+
+  // ── Timeline chart ──────────────────────────────────────────────────────────
+  if (timelineChart) timelineChart.destroy();
+  const timelineCtx = document.getElementById('timelineChart').getContext('2d');
+
+  // Gather all days and all agent names from timeline
+  const timelineAgents = [...new Set(timeline.map(r => r.agent_id))];
+  const timelineDays   = [...new Set(timeline.map(r => r.day))].sort();
+
+  // Build datasets
+  const tlDatasets = timelineAgents.map(agentId => {
+    const name  = agents.find(a => a.agent_id === agentId)?.identity?.name || agentId;
+    const color = AGENT_COLORS[name] || AGENT_COLORS[agentId] || '#7c6af7';
+    const dayMap = {};
+    timeline.filter(r => r.agent_id === agentId).forEach(r => { dayMap[r.day] = r.total_tokens; });
+    return {
+      label: name,
+      data: timelineDays.map(d => dayMap[d] || 0),
+      borderColor: color,
+      backgroundColor: color + '22',
+      tension: 0.4,
+      fill: true,
+      pointRadius: 3,
+      pointHoverRadius: 5,
+    };
+  });
+
+  timelineChart = new Chart(timelineCtx, {
+    type: 'line',
+    data: { labels: timelineDays, datasets: tlDatasets },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { labels: { color: '#7a8099', font: { size: 11 }, padding: 12 } } },
+      scales: {
+        x: { ticks: { color: '#7a8099', maxTicksLimit: 12 }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#7a8099', callback: v => fmtK(v) }, grid: { color: 'rgba(255,255,255,0.04)' } },
+      },
+    }
+  });
+
+  // ── Bar chart ───────────────────────────────────────────────────────────────
+  if (barChart) barChart.destroy();
+  const barCtx = document.getElementById('barChart').getContext('2d');
+  const sortedA = [...agents].sort((a,b) => (b.total_tokens||0)-(a.total_tokens||0));
+  barChart = new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: sortedA.map(a => a.identity?.name || a.agent_id),
+      datasets: [
+        { label:'Input',  data: sortedA.map(a=>a.input_tokens||0),      backgroundColor:'rgba(124,106,247,.7)', borderRadius:4 },
+        { label:'Output', data: sortedA.map(a=>a.output_tokens||0),     backgroundColor:'rgba(79,195,247,.7)',  borderRadius:4 },
+        { label:'Cache',  data: sortedA.map(a=>a.cache_read_tokens||0), backgroundColor:'rgba(86,196,144,.5)', borderRadius:4 },
+      ]
+    },
+    options: {
+      plugins: { legend: { labels: { color:'#7a8099', font:{size:11} } } },
+      responsive: true,
+      scales: {
+        x: { stacked:true, ticks:{color:'#7a8099'}, grid:{color:'rgba(255,255,255,0.04)'} },
+        y: { stacked:true, ticks:{color:'#7a8099'}, grid:{color:'rgba(255,255,255,0.04)'} },
+      }
+    }
+  });
+
+  // ── Donut chart ─────────────────────────────────────────────────────────────
+  if (donutChart) donutChart.destroy();
+  const donutCtx = document.getElementById('donutChart').getContext('2d');
+  const withCost = sortedA.filter(a => a.total_cost > 0);
+  donutChart = new Chart(donutCtx, {
+    type: 'doughnut',
+    data: {
+      labels: withCost.map(a => a.identity?.name || a.agent_id),
+      datasets: [{ data: withCost.map(a => +a.total_cost.toFixed(5)), backgroundColor: withCost.map(a => (AGENT_COLORS[a.identity?.name||a.agent_id]||'#7c6af7')+'cc'), borderColor:'transparent', hoverOffset:8 }]
+    },
+    options: {
+      cutout:'68%',
+      plugins: {
+        legend: { position:'bottom', labels:{color:'#7a8099',font:{size:11},padding:12} },
+        tooltip: { callbacks: { label: ctx => ` $${ctx.parsed.toFixed(5)}` } },
+      }
+    }
+  });
+
+  // ── Sessions table ──────────────────────────────────────────────────────────
+  const tbody = document.getElementById('sessionsBody');
+  tbody.innerHTML = recent_sessions.slice(0,15).map(s => {
+    const ident = s.identity || {};
+    return `<tr>
+      <td><div class="td-agent">${ident.emoji||'🤖'} ${ident.name||s.agent_id}</div></td>
+      <td class="td-mono">${s.session_id.slice(0,8)}…</td>
+      <td>${fmtDate(s.last_ts)}</td>
+      <td>${s.message_count}</td>
+      <td class="td-tokens">${fmtK(s.tokens)}</td>
+      <td class="td-cost">${fmtC(s.cost)}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('loading')?.remove();
+}
+
+// ── Mini card helper ──────────────────────────────────────────────────────────
+function miniCard(name, agent) {
+  const emoji = agent?.identity?.emoji || '🤖';
+  const sub   = agent?.identity?.subtitle || name;
+  const model = agent?.model;
+  const hasData = agent && (agent.total_tokens > 0);
+  const uid = 'mc_' + name.replace(/[^a-z0-9]/gi,'_');
+  return `
+    <div class="mini-card" id="${uid}" onclick="toggleMini('${uid}')">
+      <div class="mini-header">
+        <div class="mini-emoji">${emoji}</div>
+        <div>
+          <div class="mini-name">${name}</div>
+          <div class="mini-sub">${sub}</div>
+          ${model ? `<span class="mini-model">${model}</span>` : ''}
+        </div>
+      </div>
+      ${hasData ? `
+      <div class="mini-stats">
+        <div class="mini-stat"><div class="ms-label">Tokens</div><div class="ms-val v-accent2">${fmtK(agent.total_tokens)}</div></div>
+        <div class="mini-stat"><div class="ms-label">Costo</div><div class="ms-val v-gold">${fmtC(agent.total_cost)}</div></div>
+      </div>
+      <div class="mini-extra mini-stats">
+        <div class="mini-stat"><div class="ms-label">Sesiones</div><div class="ms-val v-success">${agent.session_count||0}</div></div>
+        <div class="mini-stat"><div class="ms-label">Histórico</div><div class="ms-val v-accent">${fmtK(agent.all_time_tokens)}</div></div>
+      </div>
+      <div class="mini-expand-hint">▾ más</div>` : `<div class="empty-mini">Sin actividad</div>`}
+    </div>`;
+}
+function toggleMini(id) {
+  document.getElementById(id).classList.toggle('expanded');
+}
+
+function onPeriodTypeChange(type) {
+  currentPeriod = type;
+  const monthSel = document.getElementById('periodMonth');
+  if (type === 'year') { monthSel.style.display = 'none'; monthSel.disabled = true; }
+  else                 { monthSel.style.display = ''; monthSel.disabled = false; }
+  onPeriodChange();
+}
+function onPeriodChange() {
+  const type  = document.getElementById('periodType').value;
+  const year  = parseInt(document.getElementById('periodYear').value);
+  const month = parseInt(document.getElementById('periodMonth').value || currentMonth);
+  loadData(type, year, month);
+}
+
+// ─── Boot ────────────────────────────────────────────────────────────────────
+loadNodes().then(() => loadData());
+</script>
+</body>
+</html>

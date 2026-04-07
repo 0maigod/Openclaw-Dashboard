@@ -1,0 +1,20 @@
+[
+  {
+    "node_id": "nodo-1",
+    "label": "Nombre descriptivo del nodo",
+    "host": "192.168.X.X",
+    "port": 22,
+    "username": "usuario_ssh",
+    "privateKeyPath": "~/.ssh/id_ed25519_openclaw",
+    "openclawPath": "/home/usuario_ssh/.openclaw"
+  },
+  {
+    "node_id": "nodo-2",
+    "label": "Otro nodo",
+    "host": "192.168.X.X",
+    "port": 22,
+    "username": "usuario_ssh",
+    "privateKeyPath": "~/.ssh/id_ed25519_openclaw",
+    "openclawPath": "/home/usuario_ssh/.openclaw"
+  }
+]

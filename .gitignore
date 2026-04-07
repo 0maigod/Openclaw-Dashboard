@@ -1,0 +1,35 @@
+# ── Dependencies ──────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+
+# ── Database ───────────────────────────────────────────────────────────────────
+# Contains real token consumption data from your machines — never commit
+db/*.sqlite
+db/*.sqlite-wal
+db/*.sqlite-shm
+
+# ── SSH & Secrets ──────────────────────────────────────────────────────────────
+# Private keys — CRITICAL: never commit private keys
+*.pem
+id_ed25519
+id_ed25519_openclaw
+id_rsa
+
+# ── Node Configuration (contains real IPs, usernames, key paths) ──────────────
+# Use config/machines.example.json as a template and fill in your own values
+config/machines.json
+
+# ── Environment ───────────────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Logs & dev notes ──────────────────────────────────────────────────────────
+*.log
+prompt_dashboard_ssh.md
+
+# ── OS & Editor ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

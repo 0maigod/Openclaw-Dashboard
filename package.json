@@ -1,0 +1,17 @@
+{
+  "name": "openclaw-dashboard",
+  "version": "2.0.0",
+  "description": "Multi-node token usage dashboard for Openclaw agents (SSH/SFTP)",
+  "main": "server.js",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "start": "node --no-warnings server.js",
+    "dev":   "node --no-warnings --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ssh2": "^1.16.0"
+  }
+}

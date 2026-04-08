@@ -130,6 +130,24 @@ function createReadStream(sftp, remotePath) {
 }
 
 /**
+ * Writes a string to a remote file.
+ * 
+ * @param {object} sftp - Active SFTP session from connect()
+ * @param {string} remotePath - Absolute remote path
+ * @param {string} content - File content
+ * @returns {Promise<boolean>}
+ */
+function writeFileAsString(sftp, remotePath, content) {
+  return new Promise((resolve, reject) => {
+    const stream = sftp.createWriteStream(remotePath);
+    stream.on('error', (err) => reject(new Error(`[sshService] writeFile failed at "${remotePath}": ${err.message}`)));
+    stream.on('close', () => resolve(true));
+    stream.write(content, 'utf8');
+    stream.end();
+  });
+}
+
+/**
  * Gracefully closes an SSH connection.
  * @param {Client} client
  */
@@ -137,4 +155,4 @@ function disconnect(client) {
   try { client.end(); } catch (_) { /* already closed */ }
 }
 
-module.exports = { connect, listDir, readFileAsString, createReadStream, disconnect };
+module.exports = { connect, listDir, readFileAsString, writeFileAsString, createReadStream, disconnect };

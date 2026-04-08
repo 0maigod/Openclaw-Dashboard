@@ -106,7 +106,13 @@
     .modal-title{font-size:.88rem;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .modal-close{background:var(--surface2);border:1px solid var(--border);color:var(--muted);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
     .modal-close:hover{color:var(--text);border-color:rgba(255,255,255,.2);}
-    .modal-body{overflow-y:auto;padding:1.1rem 1.25rem;flex:1;}
+    .modal-actions{display:flex;gap:.5rem;margin-right:.5rem;}
+    .modal-action-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:.2rem .5rem;cursor:pointer;font-size:.85rem;font-family:inherit;transition:all .15s;display:none;align-items:center;opacity:.7;}
+    .modal-action-btn:hover{border-color:var(--accent);opacity:1;}
+    .modal-action-btn:disabled{opacity:.3;cursor:not-allowed;}
+    .editor-textarea{width:100%;height:100%;min-height:300px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Fira Code','Courier New',monospace;font-size:.85rem;padding:1rem;border-radius:8px;outline:none;resize:vertical;}
+    .editor-textarea:focus{border-color:var(--accent);}
+    .modal-body{overflow-y:auto;padding:1.1rem 1.25rem;flex:1;display:flex;flex-direction:column;}
     .modal-body pre{white-space:pre-wrap;word-break:break-word;font-family:'Inter',sans-serif;font-size:.82rem;line-height:1.7;color:var(--text);}
     .modal-loading{color:var(--muted);font-size:.82rem;text-align:center;padding:2rem;}
 
@@ -349,6 +355,11 @@
   <div class="modal-box">
     <div class="modal-header">
       <span class="modal-title" id="previewTitle"></span>
+      <div class="modal-actions" id="previewActions">
+        <button class="modal-action-btn" id="btnDownload" onclick="downloadPreview()" title="Descargar">⬇️</button>
+        <button class="modal-action-btn" id="btnEdit" onclick="toggleEditPreview()" title="Editar">✏️</button>
+        <button class="modal-action-btn" id="btnSave" onclick="savePreview()" title="Guardar">💾</button>
+      </div>
       <button class="modal-close" onclick="closePreview()">✕</button>
     </div>
     <div class="modal-body" id="previewBody">
@@ -580,6 +591,11 @@ if (sessionStorage.getItem('nav-enter')) {
 }
 
 // ─── File preview modal ───────────────────────────────────────────────────────
+let currentPreviewContent = '';
+let currentPreviewPath = '';
+let currentPreviewName = '';
+let isEditing = false;
+
 async function openPreview(rawPath, name) {
   const overlay = document.getElementById('previewOverlay');
   const title   = document.getElementById('previewTitle');
@@ -590,18 +606,99 @@ async function openPreview(rawPath, name) {
   body.innerHTML = '<div class="modal-loading">Cargando…</div>';
   overlay.classList.add('open');
 
+  document.getElementById('btnDownload').style.display = 'none';
+  document.getElementById('btnEdit').style.display = 'none';
+  document.getElementById('btnSave').style.display = 'none';
+
+  currentPreviewPath = rawPath;
+  currentPreviewName = name;
+  isEditing = false;
+
   try {
     const res  = await fetch(`/api/file-content?node=${node}&path=${encodeURIComponent(rawPath)}`);
     const data = await res.json();
     if (data.error) {
       body.innerHTML = `<div class="modal-loading" style="color:#f87171">${data.error}</div>`;
-    } else if (data.ext === '.md' && typeof marked !== 'undefined') {
-      body.innerHTML = `<div class="md-body">${marked.parse(data.content)}</div>`;
     } else {
-      body.innerHTML = `<pre>${escapeHtml(data.content)}</pre>`;
+      currentPreviewContent = data.content;
+      document.getElementById('btnDownload').style.display = 'flex';
+      document.getElementById('btnEdit').style.display = 'flex';
+      renderPreviewContent(data.content, data.ext);
     }
   } catch(e) {
     body.innerHTML = `<div class="modal-loading" style="color:#f87171">Error al cargar el archivo.</div>`;
+  }
+}
+
+function renderPreviewContent(content, ext) {
+  const body = document.getElementById('previewBody');
+  if (ext === '.md' && typeof marked !== 'undefined') {
+    body.innerHTML = `<div class="md-body">${marked.parse(content)}</div>`;
+  } else {
+    body.innerHTML = `<pre>${escapeHtml(content)}</pre>`;
+  }
+}
+
+function downloadPreview() {
+  const blob = new Blob([currentPreviewContent], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = currentPreviewName;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function toggleEditPreview() {
+  const body = document.getElementById('previewBody');
+  if (!isEditing) {
+    isEditing = true;
+    document.getElementById('btnEdit').style.display = 'none';
+    document.getElementById('btnSave').style.display = 'flex';
+    body.innerHTML = '<textarea class="editor-textarea" id="previewTextarea" spellcheck="false"></textarea>';
+    document.getElementById('previewTextarea').value = currentPreviewContent;
+  } else {
+    isEditing = false;
+    document.getElementById('btnEdit').style.display = 'flex';
+    document.getElementById('btnSave').style.display = 'none';
+    renderPreviewContent(currentPreviewContent, extOf(currentPreviewName) ? `.${extOf(currentPreviewName)}` : '');
+  }
+}
+
+async function savePreview() {
+  const textarea = document.getElementById('previewTextarea');
+  if (!textarea) return;
+  const newContent = textarea.value;
+  const node = getSelectedNode();
+  
+  const btn = document.getElementById('btnSave');
+  const originalHtml = btn.innerHTML;
+  btn.innerHTML = '⏳';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`/api/file-content?node=${node}&path=${encodeURIComponent(currentPreviewPath)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: newContent })
+    });
+    const data = await res.json();
+    if (data.error) {
+      alert('Error al guardar: ' + data.error);
+    } else {
+      currentPreviewContent = newContent;
+      isEditing = false;
+      document.getElementById('btnEdit').style.display = 'flex';
+      btn.style.display = 'none';
+      renderPreviewContent(currentPreviewContent, extOf(currentPreviewName) ? `.${extOf(currentPreviewName)}` : '');
+      // Force refresh grid file modification times if active
+      if (currentProject) loadProject(currentProject);
+    }
+  } catch (err) {
+    alert('Error de red: ' + err.message);
+  } finally {
+    btn.innerHTML = originalHtml;
+    btn.disabled = false;
   }
 }
 

@@ -380,6 +380,48 @@ app.get('/api/file-content', async (req, res) => {
   }
 });
 
+// ── POST /api/file-content ─────────────────────────────────────────────────────
+// Updates the remote project file via SFTP.
+app.post('/api/file-content', async (req, res) => {
+  const { node: nodeId, path: relPath } = req.query;
+  const { content } = req.body;
+
+  if (!nodeId)  return res.status(400).json({ error: 'Missing ?node= parameter' });
+  if (!relPath) return res.status(400).json({ error: 'Missing ?path= parameter' });
+  if (typeof content !== 'string') return res.status(400).json({ error: 'Missing content in body' });
+
+  const machines  = ingestion.loadMachinesConfig();
+  const nodeConfig = machines.find(m => m.node_id === nodeId);
+  if (!nodeConfig) return res.status(404).json({ error: `Node "${nodeId}" not found in config` });
+
+  const workspacePath = nodeConfig.openclawPath + '/workspace/proyectos';
+  const ext           = path.extname(relPath).toLowerCase();
+  const ALLOWED_EXTS  = ['.md', '.txt', '.fountain', '.json'];
+
+  if (!ALLOWED_EXTS.includes(ext)) {
+    return res.status(415).json({ error: 'File type not supported for saving' });
+  }
+
+  const normalized = path.posix.normalize(relPath);
+  if (normalized.startsWith('..') || normalized.startsWith('/')) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  const remotePath = workspacePath + '/' + normalized;
+
+  let client, sftp;
+  try {
+    ({ client, sftp } = await ssh.connect(nodeConfig));
+    await ssh.writeFileAsString(sftp, remotePath, content);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('/api/file-content POST error:', err.message);
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (client) ssh.disconnect(client);
+  }
+});
+
 // ── POST /api/projects (legacy placeholder) ───────────────────────────────────
 app.post('/api/projects', (req, res) => {
   const { title, description, status, agent_id } = req.body;

@@ -226,7 +226,7 @@
     <h1>FZ-ScriptRoom</h1>
   </div>
   <div class="header-right">
-    <button class="nav-link" id="navBtn" onclick="navigateTo('/proyectos')">🗂 Tableros</button>
+    <button class="nav-link" id="navBtn" onclick="navigateTo('/openclaw-dashboard/proyectos')">🗂 Tableros</button>
     <div class="node-select-wrap">
       <span class="node-select-label">🖥️ Nodo</span>
       <select class="node-select" id="nodeFilter" onchange="loadData()">
@@ -320,7 +320,7 @@ function periodRange(type, year, month) {
 // ─── Load node list ──────────────────────────────────────────────────────────
 async function loadNodes() {
   try {
-    const res  = await fetch('/api/nodes');
+    const res  = await fetch('/openclaw-dashboard/api/nodes');
     const data = await res.json();
     const sel  = document.getElementById('nodeFilter');
     // Keep the 'all' option, then append each node
@@ -343,7 +343,7 @@ async function triggerSync() {
   const icon = document.getElementById('refreshIcon');
   icon.classList.add('spinning');
   try {
-    await fetch('/api/sync', { method: 'POST' });
+    await fetch('/openclaw-dashboard/api/sync', { method: 'POST' });
     document.getElementById('lastUpdated').textContent = 'Sincronizando… ' + new Date().toLocaleTimeString('es-AR');
     // Reload stats after a short delay to let the background job start
     setTimeout(() => loadData(), 3000);
@@ -370,7 +370,7 @@ async function loadData(type, year, month) {
   const icon = document.getElementById('refreshIcon');
   icon.classList.add('spinning');
   try {
-    const res  = await fetch(`/api/stats?tsStart=${tsStart}&tsEnd=${tsEnd}&node=${node}`);
+    const res  = await fetch(`/openclaw-dashboard/api/stats?tsStart=${tsStart}&tsEnd=${tsEnd}&node=${node}`);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     render(data);

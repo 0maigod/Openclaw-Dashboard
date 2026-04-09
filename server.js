@@ -167,6 +167,7 @@ function queryStats({ nodeId = 'all', year, month, tsStart, tsEnd } = {}) {
 }
 
 // ── Express app ───────────────────────────────────────────────────────────────
+const rootApp = express();
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -435,8 +436,11 @@ app.post('/api/projects', (req, res) => {
 });
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`✅ Dashboard running at http://localhost:${PORT}`);
+rootApp.use('/openclaw-dashboard', app);
+rootApp.get('/', (req, res) => res.redirect('/openclaw-dashboard/'));
+
+rootApp.listen(PORT, () => {
+  console.log(`✅ Dashboard running at http://localhost:${PORT}/openclaw-dashboard/`);
   // Start background SSH ingestion job (non-blocking)
   ingestion.startIngestionJob(db, 10 * 60 * 1000);
 });

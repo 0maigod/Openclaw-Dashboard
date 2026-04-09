@@ -150,7 +150,7 @@
     <h1>FZ-ScriptRoom</h1>
   </div>
   <div class="header-right">
-    <button class="nav-link" id="navBtn" onclick="navigateTo('/')">📊 Dashboard</button>
+    <button class="nav-link" id="navBtn" onclick="navigateTo('/openclaw-dashboard/')">📊 Dashboard</button>
     <div class="node-select-wrap">
       <span class="node-select-label">🖥️ Nodo</span>
       <select class="node-select" id="nodeFilter" onchange="onNodeChange()">
@@ -414,7 +414,7 @@ function extOf(name) {
 // ─── Node management ──────────────────────────────────────────────────────────
 async function loadNodes() {
   try {
-    const res  = await fetch('/api/nodes');
+    const res  = await fetch('/openclaw-dashboard/api/nodes');
     const data = await res.json();
     const sel  = document.getElementById('nodeFilter');
     sel.innerHTML = data.nodes.map(n =>
@@ -446,7 +446,7 @@ async function loadProjects() {
   const node = getSelectedNode();
   if (!node) return;
   try {
-    const res  = await fetch(`/api/projects?node=${node}`);
+    const res  = await fetch(`/openclaw-dashboard/api/projects?node=${node}`);
     const data = await res.json();
     const sel  = document.getElementById('projectSelect');
     sel.innerHTML = '<option value="">— Elegir proyecto —</option>' +
@@ -471,7 +471,7 @@ async function loadProject(encoded) {
   localStorage.setItem('oc-last-project', encoded);
   const node = getSelectedNode();
   try {
-    const res  = await fetch(`/api/projects?node=${node}&project=${encoded}`);
+    const res  = await fetch(`/openclaw-dashboard/api/projects?node=${node}&project=${encoded}`);
     const data = await res.json();
     renderFiles(data.files || {});
   } catch(e) { console.error(e); }
@@ -615,7 +615,7 @@ async function openPreview(rawPath, name) {
   isEditing = false;
 
   try {
-    const res  = await fetch(`/api/file-content?node=${node}&path=${encodeURIComponent(rawPath)}`);
+    const res  = await fetch(`/openclaw-dashboard/api/file-content?node=${node}&path=${encodeURIComponent(rawPath)}`);
     const data = await res.json();
     if (data.error) {
       body.innerHTML = `<div class="modal-loading" style="color:#f87171">${data.error}</div>`;
@@ -677,7 +677,7 @@ async function savePreview() {
   btn.disabled = true;
 
   try {
-    const res = await fetch(`/api/file-content?node=${node}&path=${encodeURIComponent(currentPreviewPath)}`, {
+    const res = await fetch(`/openclaw-dashboard/api/file-content?node=${node}&path=${encodeURIComponent(currentPreviewPath)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: newContent })

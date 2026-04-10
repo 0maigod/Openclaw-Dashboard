@@ -500,6 +500,97 @@ app.delete('/api/file-content', async (req, res) => {
   }
 });
 
+// ── GET /api/agent-sessions ────────────────────────────────────────────────────
+// Lists session JSONL files from a remote node via SFTP.
+app.get('/api/agent-sessions', async (req, res) => {
+  const { node: nodeId } = req.query;
+  if (!nodeId) return res.status(400).json({ error: 'Missing ?node= parameter' });
+
+  const machines  = ingestion.loadMachinesConfig();
+  const nodeConfig = machines.find(m => m.node_id === nodeId);
+  if (!nodeConfig) return res.status(404).json({ error: `Node "${nodeId}" not found in config` });
+
+  const sessionsPath = nodeConfig.openclawPath + '/agents/main/sessions';
+
+  let client, sftp;
+  try {
+    ({ client, sftp } = await ssh.connect(nodeConfig));
+    const entries = await ssh.listDir(sftp, sessionsPath);
+    const sessions = entries
+      .filter(e => e.filename.endsWith('.jsonl'))
+      .sort((a, b) => b.attrs.mtime - a.attrs.mtime)
+      .map(e => e.filename);
+    res.json({ sessions });
+  } catch (err) {
+    console.error('/api/agent-sessions error:', err.message);
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (client) ssh.disconnect(client);
+  }
+});
+
+// ── GET /api/agent-sessions/content ────────────────────────────────────────────
+// Loads a remote JSONL session and maps it to the basic structures.
+app.get('/api/agent-sessions/content', async (req, res) => {
+  const { node: nodeId, file } = req.query;
+  if (!nodeId || !file) return res.status(400).json({ error: 'Missing node or file' });
+
+  const machines  = ingestion.loadMachinesConfig();
+  const nodeConfig = machines.find(m => m.node_id === nodeId);
+  if (!nodeConfig) return res.status(404).json({ error: 'Node not found' });
+
+  const safeFile = path.basename(file);
+  const remotePath = nodeConfig.openclawPath + '/agents/main/sessions/' + safeFile;
+
+  let client, sftp;
+  try {
+    ({ client, sftp } = await ssh.connect(nodeConfig));
+    const raw = await ssh.readFileAsString(sftp, remotePath);
+    if (!raw) return res.status(404).json({ error: 'Session file not found' });
+    
+    const lines = raw.split('\n').filter(l => l.trim().length > 0);
+    const messages = [];
+    for (const line of lines) {
+      try {
+        const obj = JSON.parse(line);
+        if (obj.type === 'message' && obj.message) {
+          let textContent = '';
+          let tool_calls = obj.message.tool_calls || [];
+          
+          if (Array.isArray(obj.message.content)) {
+            const textParts = [];
+            for (const part of obj.message.content) {
+              if (part.type === 'text' && part.text) textParts.push(part.text);
+              if (part.type === 'toolCall') {
+                tool_calls.push({ function: { name: part.name, arguments: JSON.stringify(part.arguments) } });
+              }
+            }
+            textContent = textParts.join('\n');
+          } else {
+            textContent = obj.message.content || '';
+          }
+
+          messages.push({
+            ts: obj.timestamp || obj.ts || 0,
+            role: obj.message.role,
+            content: textContent,
+            name: obj.message.name,
+            tool_calls: tool_calls,
+            cost: obj.message.usage?.cost?.total || 0,
+            tokens: (obj.message.usage?.input || 0) + (obj.message.usage?.output || 0)
+          });
+        }
+      } catch (e) { /* ignore parse error */ }
+    }
+    res.json({ messages });
+  } catch (err) {
+    console.error('/api/agent-sessions/content error:', err.message);
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (client) ssh.disconnect(client);
+  }
+});
+
 // ── POST /api/projects (legacy placeholder) ───────────────────────────────────
 app.post('/api/projects', (req, res) => {
   const { title, description, status, agent_id } = req.body;

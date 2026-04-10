@@ -141,9 +141,74 @@
     .md-body hr{border:none;border-top:1px solid var(--border);margin:1.25em 0;}
     .md-body img{max-width:100%;border-radius:6px;}
 
+    /* ─── SESSION VIEWER CSS ───────────────────── */
+    :root {
+      --sv-user-bg: #0a3327; --sv-user-txt: #5dcaa5;
+      --sv-orch-bg: #1e1c3a; --sv-orch-txt: #afa9ec;
+      --sv-tool-bg: #2a1e00; --sv-tool-txt: #fac775;
+      --sv-agent-bg:#0a1e33; --sv-agent-txt:#85b7eb;
+      --sv-del-bg:  #2a0a0a; --sv-del-txt:  #f09595;
+      --sv-spine:   rgba(255,255,255,0.12);
+      --sv-radius:  10px;
+      --sv-green:   #5DCAA5;
+      --sv-purple:  #7F77DD;
+      --sv-amber:   #EF9F27;
+      --sv-blue:    #378ADD;
+    }
+    .sv-app { padding: 0.5rem 1.5rem; }
+    .sv-header-row { display:flex; gap:1rem; align-items:center; margin-bottom: 20px; }
+    .sv-header-row select { background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:.4em .6em; border-radius:6px; outline:none; font-family:inherit; min-width: 250px; }
+    .sv-header { margin-bottom: 28px; }
+    .sv-header h2 { font-size: 16px; font-weight: 600; }
+    .sv-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-bottom: 16px; }
+    .sv-leg { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
+    .sv-leg-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .sv-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+    .sv-filter-btn { font-size: 12px; padding: 4px 12px; border-radius: 99px; border: 0.5px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer; transition: all .15s; }
+    .sv-filter-btn.active { font-weight: 500; }
+    .sv-filter-btn.f-all.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+    .sv-filter-btn.f-user.active { background: var(--sv-user-bg); color: var(--sv-user-txt); border-color: var(--sv-user-txt); }
+    .sv-filter-btn.f-orch.active { background: var(--sv-orch-bg); color: var(--sv-orch-txt); border-color: var(--sv-orch-txt); }
+    .sv-filter-btn.f-tool.active { background: var(--sv-tool-bg); color: var(--sv-tool-txt); border-color: var(--sv-tool-txt); }
+    .sv-filter-btn.f-agent.active { background: var(--sv-agent-bg); color: var(--sv-agent-txt); border-color: var(--sv-agent-txt); }
+    .sv-timeline { position: relative; padding-left: 28px; }
+    .sv-spine { position: absolute; left: 10px; top: 0; bottom: 0; width: 1px; background: var(--sv-spine); }
+    .sv-evt { position: relative; margin-bottom: 2px; }
+    .sv-evt.hidden { display: none; }
+    .sv-evt-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 12px; border-radius: var(--sv-radius); transition: background .15s; }
+    .sv-evt-row:hover { background: var(--surface2); }
+    .sv-evt-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; position: relative; z-index: 1; left: -22px; margin-right: -10px; box-shadow: 0 0 0 2.5px var(--surface); }
+    .sv-evt-main { flex: 1; min-width: 0; }
+    .sv-evt-header { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 3px; }
+    .sv-role-tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; }
+    .sv-time-tag { font-size: 11px; color: var(--muted); }
+    .sv-elapsed { font-size: 11px; color: var(--muted); font-style: italic; opacity:.7; }
+    .sv-evt-details summary { font-size: 11px; padding: 2px 0; color: var(--muted); cursor: pointer; user-select: none; margin: 4px 0; outline:none; list-style: none; display: inline-flex; align-items: center; gap: 4px; transition: color .15s; }
+    .sv-evt-details summary:hover { color: var(--text); }
+    .sv-evt-details summary::-webkit-details-marker { display: none; }
+    .sv-evt-details summary::before { content: '▾'; font-family: monospace; font-size: 12px; transition: transform 0.2s; }
+    .sv-evt-details:not([open]) summary::before { transform: rotate(-90deg); }
+    .sv-evt-body { font-size: 13px; color: var(--text); line-height: 1.55; opacity:.85; padding-left: 2px; }
+    .sv-evt-body strong { color: var(--text); font-weight: 600; }
+    .sv-evt-body code { font-family: 'SF Mono','Fira Code',monospace; font-size: 11.5px; background: rgba(0,0,0,0.3); padding: 1px 5px; border-radius: 4px; color: var(--text); }
+    .sv-tools-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+    .sv-tool-chip { font-size: 11px; padding: 2px 8px; border-radius: 99px; border: 0.5px solid; font-family: 'SF Mono','Fira Code',monospace; }
+    .sv-agent-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+    .sv-agent-chip { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: var(--sv-agent-bg); color: var(--sv-agent-txt); border: 0.5px solid var(--sv-agent-txt); }
+    #sv-empty { display: none; text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
+    .sv-bottom { margin-top: 32px; display: flex; flex-direction: column; gap: 16px; }
+    .sv-section { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--sv-radius); padding: 16px 18px; }
+    .sv-section-title { font-size: 12px; font-weight: 600; color: var(--text); text-transform: uppercase; margin-bottom: 12px; }
+    .sv-cost-row { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+    .sv-cost-label { width: 200px; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+    .sv-cost-bar-bg { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,.05); overflow: hidden; }
+    .sv-cost-bar-fill { height: 100%; border-radius: 3px; }
+    .sv-cost-val { width: 58px; text-align: right; font-size: 12px; font-weight: 500; color: var(--text); font-family: 'SF Mono',monospace; }
+    .sv-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+    .sv-stat { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--sv-radius); padding: 12px 14px; }
+    .sv-stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+    .sv-stat-value { font-size: 20px; font-weight: 600; margin-top: 3px; color: var(--text); }
 
-
-    @media(max-width:1100px){.block-body{grid-template-columns:repeat(2,1fr);}}
     @media(max-width:700px){.block-body{grid-template-columns:1fr;}}
   </style>
 </head>
@@ -375,6 +440,59 @@
       </div>
     </div>
 
+    <!-- SESSION VIEWER block -->
+    <div class="board-block">
+      <div class="block-header" onclick="toggleBlock('sv')">
+        <div class="block-dot" style="background:#5DCAA5"></div>
+        <span class="block-title" style="color:#5DCAA5">● Session Viewer</span>
+        <span class="block-toggle collapsed" id="sv-toggle">▾</span>
+      </div>
+      <!-- Collapsed by default -->
+      <div class="block-body-wrap collapsed" id="sv-wrap" style="max-height:0;">
+        <div class="board-col" style="padding: 1.5rem;">
+          <div class="sv-app">
+            
+            <div class="sv-header-row">
+              <select id="sessionViewerSelect" onchange="loadSession(this.value)">
+                <option value="">— Seleccionar sesión —</option>
+              </select>
+              <button class="modal-action-btn" style="display:flex;opacity:1;" onclick="reloadSessionList()" title="Actualizar Sesiones">⟳</button>
+            </div>
+
+            <div class="sv-legend">
+              <span class="sv-leg"><span class="sv-leg-dot" style="background:var(--sv-green)"></span>Usuario</span>
+              <span class="sv-leg"><span class="sv-leg-dot" style="background:var(--sv-purple)"></span>Orquestador</span>
+              <span class="sv-leg"><span class="sv-leg-dot" style="background:var(--sv-amber)"></span>Tool call</span>
+            </div>
+
+            <div class="sv-filters">
+              <button class="sv-filter-btn f-all active" onclick="setSvFilter('all')">Todos</button>
+              <button class="sv-filter-btn f-user" onclick="setSvFilter('user')">Usuarios</button>
+              <button class="sv-filter-btn f-orch" onclick="setSvFilter('orch')">Orquestador</button>
+              <button class="sv-filter-btn f-tool" onclick="setSvFilter('tool')">Tools</button>
+            </div>
+
+            <div id="sv-loading" style="display:none; color:var(--muted); text-align:center; padding: 2rem;">Cargando log de la sesión...</div>
+
+            <div class="sv-timeline">
+              <div class="sv-spine"></div>
+              <div id="sv-timeline-events"></div>
+            </div>
+            <div id="sv-empty" style="display:none;">No hay eventos para mostrar.</div>
+
+            <div class="sv-bottom">
+              <div class="sv-section">
+                <div class="sv-section-title">Costo por llamada al modelo (USD)</div>
+                <div id="sv-cost-chart"></div>
+              </div>
+              <div class="sv-stats-grid" id="sv-stats-grid"></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -462,7 +580,7 @@ function onNodeChange() {
   currentProject = null;
   clearAllCols();
   document.getElementById('projectSelect').innerHTML = '<option value="">— Elegir proyecto —</option>';
-  if (node) loadProjects();
+  if (node) { loadProjects(); reloadSessionList(); }
 }
 
 function getSelectedNode() {
@@ -792,6 +910,202 @@ async function confirmDelete(relPath, name) {
   } catch (err) {
     alert('Error al eliminar: ' + err.message);
   }
+}
+
+// ─── SESSION VIEWER LOGIC ────────────────────────────────────────────────────
+let svEVENTS = [];
+let svCOSTS = [];
+let svSTATS = [];
+let currentSvFilter = 'all';
+
+async function reloadSessionList() {
+  const node = getSelectedNode();
+  if (!node) return;
+  const sel = document.getElementById('sessionViewerSelect');
+  sel.innerHTML = '<option value="">— Cargando log de sesiones... —</option>';
+  try {
+    const res = await fetch(`/openclaw-dashboard/api/agent-sessions?node=${node}`);
+    const data = await res.json();
+    if(data.sessions && data.sessions.length > 0) {
+      sel.innerHTML = '<option value="">— Seleccionar log .jsonl —</option>' + 
+        data.sessions.map(s => `<option value="${s.replace(/"/g,'&quot;')}">${s}</option>`).join('');
+    } else {
+      sel.innerHTML = '<option value="">Sin sesiones .jsonl recientes</option>';
+    }
+  } catch (err) {
+    sel.innerHTML = '<option value="">Error al cargar</option>';
+  }
+}
+
+// Map tool calls logic mimicking user snippet
+const SV_TOOL_COLORS = {
+  exec:  {bg:'var(--sv-tool-bg)', txt:'var(--sv-tool-txt)', bdr:'#fac775'},
+  read:  {bg:'var(--sv-agent-bg)',txt:'var(--sv-agent-txt)',bdr:'#85b7eb'},
+  edit:  {bg:'#1a3a30',           txt:'#5dcaa5',            bdr:'#5dcaa5'},
+  write: {bg:'#1a3a30',           txt:'#5dcaa5',            bdr:'#5dcaa5'}
+};
+function getSvChipColor(name) {
+  let matched = Object.keys(SV_TOOL_COLORS).find(k => name.toLowerCase().includes(k));
+  return SV_TOOL_COLORS[matched] || SV_TOOL_COLORS.exec;
+}
+
+function svEscapeHtml(unsafe) {
+  if (!unsafe) return '';
+  return unsafe.toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+async function loadSession(file) {
+  if (!file) return;
+  const node = getSelectedNode();
+  document.getElementById('sv-loading').style.display = 'block';
+  document.getElementById('sv-timeline-events').innerHTML = '';
+  document.getElementById('sv-cost-chart').innerHTML = '';
+  document.getElementById('sv-stats-grid').innerHTML = '';
+  
+  try {
+    const res = await fetch(`/openclaw-dashboard/api/agent-sessions/content?node=${node}&file=${encodeURIComponent(file)}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    svEVENTS = [];
+    svCOSTS = [];
+    
+    let totalCost = 0;
+    let totalTokens = 0;
+    let toolCount = 0;
+
+    data.messages.forEach((m, idx) => {
+      // Map to logical type
+      let type = m.role === 'user' ? 'user' : (m.role === 'tool' ? 'tool' : 'orch');
+      if (m.tool_calls && m.tool_calls.length > 0) type = 'orch';
+      if (type === 'tool') return; // Hide direct tool responses in UI if needed, or parse similarly. The snippet hides them or renders as amber. 
+      // Actually, we process tool_calls inside the orch block based on original snippet logic or show them individually.
+      // Let's keep it simple:
+
+      let cleanMetadata = (txt) => {
+        let cleaned = txt.replace(/Conversation info \(untrusted metadata\):[\s\S]*?```[\r\n]+/gi, '');
+        cleaned = cleaned.replace(/Sender \(untrusted metadata\):[\s\S]*?```[\r\n]+/gi, '');
+        return cleaned.trim();
+      };
+
+      let text = '';
+      if(typeof m.content === 'string') text = svEscapeHtml(cleanMetadata(m.content)).replace(/\n/g, '<br/>');
+      else if (Array.isArray(m.content)) text = svEscapeHtml(cleanMetadata(m.content.map(x=>x.text||'').join(' '))).replace(/\n/g, '<br/>');
+
+      const tools = (m.tool_calls || []).map(tc => {
+        let label = tc.function?.name || 'tool';
+        try {
+          const args = JSON.parse(tc.function.arguments);
+          if (args.command) label += ' ' + args.command.substring(0, 40);
+          else if (args.path) label += ' ' + args.path;
+        } catch(e){}
+        return { name: tc.function?.name || 'tool', label };
+      });
+      toolCount += tools.length;
+      totalCost += m.cost;
+      totalTokens += m.tokens;
+
+      svEVENTS.push({
+        type, ts: m.ts, cost: m.cost, text, tools,
+        sender: type === 'user' ? (m.name || 'Usuario') : 'Orquestador'
+      });
+
+      if (m.cost > 0) {
+        let labelStr = tools.length > 0 ? tools[0].label : (type === 'user' ? 'User Msg' : 'Orch Logic');
+        svCOSTS.push({ label: labelStr, cost: m.cost, type });
+      }
+    });
+
+    const elapsedMs = svEVENTS.length > 1 ? (svEVENTS[svEVENTS.length-1].ts - svEVENTS[0].ts) : 0;
+    
+    svSTATS = [
+      { label:'Costo total', value:'$'+totalCost.toFixed(4) },
+      { label:'Tokens totales', value:totalTokens.toLocaleString() },
+      { label:'Tool calls', value:toolCount.toString() },
+      { label:'Msgs Totales', value:svEVENTS.length.toString() }
+    ];
+
+    document.getElementById('sv-loading').style.display = 'none';
+    renderSv();
+  } catch(e) {
+    document.getElementById('sv-loading').style.display = 'none';
+    alert('Error al cargar sesión: ' + e.message);
+  }
+}
+
+function fmtSvTime(ts) {
+  return new Date(ts).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+}
+
+function renderSv() {
+  let html = [], prevTs = null;
+  for (const e of svEVENTS) {
+    if (currentSvFilter !== 'all' && e.type !== currentSvFilter) continue;
+    
+    const time = fmtSvTime(e.ts);
+    let gap = '';
+    if (prevTs && (e.ts - prevTs > 60000)) gap = `<span class="sv-elapsed">— ${(e.ts - prevTs)/1000}s después</span>`;
+    prevTs = e.ts;
+
+    const bgMap = { 'user': 'var(--sv-green)', 'orch': 'var(--sv-purple)', 'tool': 'var(--sv-amber)' };
+    const tagBg = { 'user': 'var(--sv-user-bg)', 'orch': 'var(--sv-orch-bg)', 'tool': 'var(--sv-tool-bg)' };
+    const tagTxt = { 'user': 'var(--sv-user-txt)', 'orch': 'var(--sv-orch-txt)', 'tool': 'var(--sv-tool-txt)' };
+
+    let tchips = '';
+    if (e.tools && e.tools.length) {
+      tchips = '<div class="sv-tools-row">' + e.tools.map(t => {
+        const c = getSvChipColor(t.name);
+        return `<span class="sv-tool-chip" style="background:${c.bg};color:${c.txt};border-color:${c.bdr}">${t.label}</span>`;
+      }).join('') + '</div>';
+    }
+
+    html.push(`
+      <div class="sv-evt" data-type="${e.type}">
+        <div class="sv-evt-row">
+          <span class="sv-evt-dot" style="background:${bgMap[e.type] || 'var(--sv-blue)'}"></span>
+          <div class="sv-evt-main">
+            <div class="sv-evt-header">
+              <span class="sv-role-tag" style="background:${tagBg[e.type]};color:${tagTxt[e.type]}">${e.sender}</span>
+              <span class="sv-time-tag">${time}</span>${gap}
+              ${e.cost ? `<span class="sv-time-tag">$${e.cost.toFixed(4)}</span>` : ''}
+            </div>
+            ${e.text ? `<details open class="sv-evt-details"><summary>Contenido del mensaje</summary><div class="sv-evt-body">${e.text}</div></details>` : ''}
+            ${tchips}
+          </div>
+        </div>
+      </div>
+    `);
+  }
+  document.getElementById('sv-timeline-events').innerHTML = html.join('');
+  document.getElementById('sv-empty').style.display = html.length ? 'none' : 'block';
+
+  // Costs
+  const maxCost = svCOSTS.length ? Math.max(...svCOSTS.map(c=>c.cost)) : 1;
+  const cHtml = svCOSTS.map(c => `
+    <div class="sv-cost-row">
+      <span class="sv-cost-label" title="${c.label}">${c.label.substring(0,35)}</span>
+      <div class="sv-cost-bar-bg"><div class="sv-cost-bar-fill" style="width:${Math.max(1, (c.cost/maxCost)*100)}%;background:var(--sv-purple)"></div></div>
+      <span class="sv-cost-val">$${c.cost.toFixed(4)}</span>
+    </div>`).join('');
+  document.getElementById('sv-cost-chart').innerHTML = cHtml;
+
+  // Stats
+  document.getElementById('sv-stats-grid').innerHTML = svSTATS.map(s => `
+    <div class="sv-stat"><div class="sv-stat-label">${s.label}</div><div class="sv-stat-value">${s.value}</div></div>
+  `).join('');
+}
+
+function setSvFilter(type) {
+  currentSvFilter = type;
+  document.querySelectorAll('.sv-filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === type);
+  });
+  renderSv();
 }
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────

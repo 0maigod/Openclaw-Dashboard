@@ -148,6 +148,30 @@ function writeFileAsString(sftp, remotePath, content) {
 }
 
 /**
+ * Renames or moves a remote file.
+ */
+function renameFile(sftp, oldRemotePath, newRemotePath) {
+  return new Promise((resolve, reject) => {
+    sftp.rename(oldRemotePath, newRemotePath, (err) => {
+      if (err) reject(new Error(`[sshService] rename failed: ${err.message}`));
+      else resolve(true);
+    });
+  });
+}
+
+/**
+ * Deletes a remote file.
+ */
+function deleteFile(sftp, remotePath) {
+  return new Promise((resolve, reject) => {
+    sftp.unlink(remotePath, (err) => {
+      if (err) reject(new Error(`[sshService] delete failed: ${err.message}`));
+      else resolve(true);
+    });
+  });
+}
+
+/**
  * Gracefully closes an SSH connection.
  * @param {Client} client
  */
@@ -155,4 +179,5 @@ function disconnect(client) {
   try { client.end(); } catch (_) { /* already closed */ }
 }
 
-module.exports = { connect, listDir, readFileAsString, writeFileAsString, createReadStream, disconnect };
+module.exports = { connect, listDir, readFileAsString, writeFileAsString, renameFile, deleteFile, createReadStream, disconnect };
+

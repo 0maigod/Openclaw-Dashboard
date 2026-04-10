@@ -76,12 +76,17 @@
     .col-empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.72rem;opacity:.4;padding:1.5rem 1rem;text-align:center;flex:1;}
 
     /* ─── File card ───────────────────────────── */
-    .file-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.55rem .7rem;cursor:default;transition:border-color .15s,transform .15s;}
+    .file-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.55rem .7rem;cursor:default;transition:border-color .15s,transform .15s;position:relative;}
     .file-card:hover{border-color:rgba(124,106,247,.4);transform:translateY(-1px);}
     .file-card[data-previewable]{cursor:pointer;}
     .file-card[data-previewable]:hover{border-color:rgba(124,106,247,.6);}
-    .file-card-name{font-size:.76rem;font-weight:500;word-break:break-word;line-height:1.35;}
+    .file-card-name{font-size:.76rem;font-weight:500;word-break:break-word;line-height:1.35;padding-right:2.4rem;}
     .file-card-meta{display:flex;align-items:center;gap:.5rem;margin-top:.3rem;}
+    .file-card-actions{position:absolute;top:.35rem;right:.35rem;display:flex;gap:.25rem;opacity:0;transition:opacity .2s;}
+    .file-card:hover .file-card-actions{opacity:1;}
+    .action-icon{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:.15rem .25rem;font-size:.65rem;cursor:pointer;color:var(--text);transition:all .2s;}
+    .action-icon:hover{border-color:var(--accent);background:var(--surface2);}
+    .action-icon.danger:hover{border-color:rgba(248,113,113,.7);background:rgba(248,113,113,.1);color:#f87171;}
     .file-ext{font-size:.62rem;padding:.1rem .4rem;border-radius:4px;background:rgba(79,195,247,.12);color:var(--accent2);border:1px solid rgba(79,195,247,.2);font-weight:600;}
     .file-stage{font-size:.62rem;color:var(--muted);}
     .file-date{font-size:.6rem;color:var(--muted);margin-left:auto;}
@@ -314,6 +319,29 @@
       </div>
     </div>
 
+    <!-- NO CLASIFICADOS block -->
+    <div class="board-block">
+      <div class="block-header" onclick="toggleBlock('unc')">
+        <div class="block-dot" style="background:#7a8099"></div>
+        <span class="block-title" style="color:#7a8099">● No Clasificados</span>
+        <span class="block-toggle" id="unc-toggle">▾</span>
+      </div>
+      <div class="block-body-wrap" id="unc-wrap" style="max-height:4000px">
+        <div class="block-body" style="padding-top:.25rem;grid-template-columns:1fr">
+          <!-- Unclassified -->
+          <div class="board-col">
+            <div class="col-header">
+              <div class="col-accent-bar" style="background:#7a8099"></div>
+              <span class="col-emoji">📁</span>
+              <div><div class="col-name">Otros Archivos</div><div class="col-role">Documentos sin agente asignado</div></div>
+              <span class="col-count" id="cnt-unc">0</span>
+            </div>
+            <div class="col-body" id="col-unc"><div class="col-empty">Sin archivos</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ENTREGABLES block -->
     <div class="board-block">
       <div class="block-header" onclick="toggleBlock('ent')">
@@ -478,7 +506,7 @@ async function loadProject(encoded) {
 }
 
 function clearAllCols() {
-  const allCols = new Set([...Object.values(AGENT_COL), ...Object.values(ENTREGABLES_COL)]);
+  const allCols = new Set([...Object.values(AGENT_COL), ...Object.values(ENTREGABLES_COL), 'unc']);
   for (const col of allCols) {
     const el = document.getElementById('col-' + col);
     if (el) el.innerHTML = '<div class="col-empty">Sin archivos</div>';
@@ -489,7 +517,7 @@ function clearAllCols() {
 
 function renderFiles(filesByAgent) {
   // Reset all columns
-  const allColIds = new Set([...Object.values(AGENT_COL), ...Object.values(ENTREGABLES_COL)]);
+  const allColIds = new Set([...Object.values(AGENT_COL), ...Object.values(ENTREGABLES_COL), 'unc']);
   for (const col of allColIds) {
     const el = document.getElementById('col-' + col);
     if (el) el.innerHTML = '';
@@ -508,7 +536,10 @@ function renderFiles(filesByAgent) {
       let colId = ENTREGABLES_EXT[ext]
                || ENTREGABLES_COL[agentKey.toLowerCase()]
                || AGENT_COL[agentKey.toLowerCase()];
-      if (!colId) continue;
+      if (!colId) {
+        if (['md','txt','json'].includes(ext)) colId = 'unc';
+        else continue;
+      }
 
       const colEl = document.getElementById('col-' + colId);
       if (!colEl) continue;
@@ -521,8 +552,17 @@ function renderFiles(filesByAgent) {
       const backupClass = f.backup ? ' is-backup' : '';
       const histBadge = f.backup ? '<span class="file-badge-hist">HIST</span>' : '';
 
+      const cleanPath = f.path.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+      const cleanName = f.name.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+      const actionsHtml = !f.backup ? `
+        <div class="file-card-actions">
+          <button class="action-icon" title="Renombrar" onclick="event.stopPropagation(); promptRename('${cleanPath}', '${cleanName}')">✏️</button>
+          <button class="action-icon danger" title="Borrar" onclick="event.stopPropagation(); confirmDelete('${cleanPath}', '${cleanName}')">🗑️</button>
+        </div>` : '';
+
       colEl.insertAdjacentHTML('beforeend', `
         <div class="file-card${backupClass}" ${previewAttr}${hint}>
+          ${actionsHtml}
           <div class="file-card-name">${f.name}</div>
           <div class="file-card-meta">
             ${histBadge}
@@ -719,6 +759,40 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Escape') closePreview();
   });
 });
+
+// ─── File Edit / Delete controls ──────────────────────────────────────────────
+async function promptRename(relPath, oldName) {
+  const newName = prompt(`Nuevo nombre para "${oldName}":`, oldName);
+  if (!newName || newName === oldName) return;
+
+  const node = getSelectedNode();
+  try {
+    const res = await fetch(`/openclaw-dashboard/api/file-content?node=${node}&path=${encodeURIComponent(relPath)}&newName=${encodeURIComponent(newName)}`, {
+      method: 'PUT'
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    if (currentProject) loadProject(currentProject);
+  } catch (err) {
+    alert('Error al renombrar: ' + err.message);
+  }
+}
+
+async function confirmDelete(relPath, name) {
+  if (!confirm(`¿Estás seguro de que deseas ELIMINAR el archivo "${name}" de forma permanente?`)) return;
+
+  const node = getSelectedNode();
+  try {
+    const res = await fetch(`/openclaw-dashboard/api/file-content?node=${node}&path=${encodeURIComponent(relPath)}`, {
+      method: 'DELETE'
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    if (currentProject) loadProject(currentProject);
+  } catch (err) {
+    alert('Error al eliminar: ' + err.message);
+  }
+}
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 loadNodes();

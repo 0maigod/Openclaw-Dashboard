@@ -423,6 +423,83 @@ app.post('/api/file-content', async (req, res) => {
   }
 });
 
+// ── PUT /api/file-content ──────────────────────────────────────────────────────
+// Renames a remote project file via SFTP.
+app.put('/api/file-content', async (req, res) => {
+  const { node: nodeId, path: relPath, newName } = req.query;
+
+  if (!nodeId)  return res.status(400).json({ error: 'Missing ?node= parameter' });
+  if (!relPath) return res.status(400).json({ error: 'Missing ?path= parameter' });
+  if (!newName) return res.status(400).json({ error: 'Missing ?newName= parameter' });
+
+  const machines  = ingestion.loadMachinesConfig();
+  const nodeConfig = machines.find(m => m.node_id === nodeId);
+  if (!nodeConfig) return res.status(404).json({ error: `Node "${nodeId}" not found in config` });
+
+  const workspacePath = nodeConfig.openclawPath + '/workspace/proyectos';
+
+  // Security: prevent path traversal
+  const normalized = path.posix.normalize(relPath);
+  if (normalized.startsWith('..') || normalized.startsWith('/')) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  // Create new rel path using the newName
+  const dirName = path.dirname(normalized);
+  const safeNewName = path.basename(newName); // Strip any subdirectories from newName to prevent trickery
+  const newNormalized = dirName === '.' ? safeNewName : dirName + '/' + safeNewName;
+
+  const oldRemotePath = workspacePath + '/' + normalized;
+  const newRemotePath = workspacePath + '/' + newNormalized;
+
+  let client, sftp;
+  try {
+    ({ client, sftp } = await ssh.connect(nodeConfig));
+    await ssh.renameFile(sftp, oldRemotePath, newRemotePath);
+    res.json({ ok: true, newPath: newNormalized });
+  } catch (err) {
+    console.error('/api/file-content PUT error:', err.message);
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (client) ssh.disconnect(client);
+  }
+});
+
+// ── DELETE /api/file-content ───────────────────────────────────────────────────
+// Deletes a remote project file via SFTP.
+app.delete('/api/file-content', async (req, res) => {
+  const { node: nodeId, path: relPath } = req.query;
+
+  if (!nodeId)  return res.status(400).json({ error: 'Missing ?node= parameter' });
+  if (!relPath) return res.status(400).json({ error: 'Missing ?path= parameter' });
+
+  const machines  = ingestion.loadMachinesConfig();
+  const nodeConfig = machines.find(m => m.node_id === nodeId);
+  if (!nodeConfig) return res.status(404).json({ error: `Node "${nodeId}" not found in config` });
+
+  const workspacePath = nodeConfig.openclawPath + '/workspace/proyectos';
+
+  // Security: prevent path traversal
+  const normalized = path.posix.normalize(relPath);
+  if (normalized.startsWith('..') || normalized.startsWith('/')) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  const remotePath = workspacePath + '/' + normalized;
+
+  let client, sftp;
+  try {
+    ({ client, sftp } = await ssh.connect(nodeConfig));
+    await ssh.deleteFile(sftp, remotePath);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('/api/file-content DELETE error:', err.message);
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (client) ssh.disconnect(client);
+  }
+});
+
 // ── POST /api/projects (legacy placeholder) ───────────────────────────────────
 app.post('/api/projects', (req, res) => {
   const { title, description, status, agent_id } = req.body;

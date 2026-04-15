@@ -252,7 +252,7 @@
         <span class="block-title" style="color:#7c6af7">● Desarrollo</span>
         <span class="block-toggle" id="dev-toggle">▾</span>
       </div>
-      <div class="block-body-wrap" id="dev-wrap" style="max-height:4000px">
+      <div class="block-body-wrap" id="dev-wrap" style="max-height:none">
         <div class="block-body" style="padding-top:.25rem">
           <!-- Adi -->
           <div class="board-col">
@@ -305,7 +305,7 @@
         <span class="block-title" style="color:#f5c842">● Estructura</span>
         <span class="block-toggle" id="str-toggle">▾</span>
       </div>
-      <div class="block-body-wrap" id="str-wrap" style="max-height:4000px">
+      <div class="block-body-wrap" id="str-wrap" style="max-height:none">
         <div class="block-body" style="padding-top:.25rem">
           <!-- Bartis -->
           <div class="board-col">
@@ -358,7 +358,7 @@
         <span class="block-title" style="color:#4fc3f7">● Desarrollo Visual</span>
         <span class="block-toggle" id="vis-toggle">▾</span>
       </div>
-      <div class="block-body-wrap" id="vis-wrap" style="max-height:4000px">
+      <div class="block-body-wrap" id="vis-wrap" style="max-height:none">
         <div class="block-body" style="padding-top:.25rem;grid-template-columns:repeat(2,1fr)">
           <!-- Farol -->
           <div class="board-col">
@@ -391,7 +391,7 @@
         <span class="block-title" style="color:#7a8099">● No Clasificados</span>
         <span class="block-toggle" id="unc-toggle">▾</span>
       </div>
-      <div class="block-body-wrap" id="unc-wrap" style="max-height:4000px">
+      <div class="block-body-wrap" id="unc-wrap" style="max-height:none">
         <div class="block-body" style="padding-top:.25rem;grid-template-columns:1fr">
           <!-- Unclassified -->
           <div class="board-col">
@@ -414,7 +414,7 @@
         <span class="block-title" style="color:#56c490">● Entregables</span>
         <span class="block-toggle" id="ent-toggle">▾</span>
       </div>
-      <div class="block-body-wrap" id="ent-wrap" style="max-height:4000px">
+      <div class="block-body-wrap" id="ent-wrap" style="max-height:none">
         <div class="block-body" style="padding-top:.25rem;grid-template-columns:repeat(2,1fr)">
           <!-- Brochure -->
           <div class="board-col">
@@ -723,15 +723,19 @@ function toggleBlock(id) {
   const isOpen = !wrap.classList.contains('collapsed');
   if (isOpen) {
     wrap.style.maxHeight  = wrap.scrollHeight + 'px'; // snapshot
-    requestAnimationFrame(() => {
-      wrap.style.maxHeight = '0';
-      wrap.classList.add('collapsed');
-      toggle.classList.add('collapsed');
-    });
+    void wrap.offsetWidth; // force reflow to ensure transition starts from exact height
+    wrap.style.maxHeight = '0';
+    wrap.classList.add('collapsed');
+    toggle.classList.add('collapsed');
   } else {
     wrap.classList.remove('collapsed');
     toggle.classList.remove('collapsed');
-    wrap.style.maxHeight = '4000px';
+    wrap.style.maxHeight = wrap.scrollHeight + 2000 + 'px';
+    setTimeout(() => {
+      if (!wrap.classList.contains('collapsed')) {
+        wrap.style.maxHeight = 'none';
+      }
+    }, 400); // Wait for transition to finish before removing max-height
   }
 }
 
@@ -1039,7 +1043,10 @@ async function loadSession(file) {
 }
 
 function fmtSvTime(ts) {
-  return new Date(ts).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  const d = new Date(ts);
+  const dateStr = d.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
+  const timeStr = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  return `${dateStr}, ${timeStr}`;
 }
 
 function renderSv() {
